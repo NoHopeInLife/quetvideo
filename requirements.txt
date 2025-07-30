@@ -2,12 +2,8 @@
 flask>=2.3.0
 flask-cors>=4.0.0
 
-# YOLO and Computer Vision (compatible with Python 3.12+)
-ultralytics>=8.0.0
-
-# PyTorch CPU-only (latest versions for Python 3.12+)
-torch>=2.5.0
-torchvision>=0.20.0
+# ONNX Runtime (INT8 inference support)
+onnxruntime==1.15.1
 
 # Image processing
 opencv-python-headless>=4.8.0
@@ -22,5 +18,5 @@ psutil>=5.9.0
 # Production server
 gunicorn>=21.0.0
 
-# Optional: For better logging
+# Optional: Logging
 coloredlogs>=15.0.0
