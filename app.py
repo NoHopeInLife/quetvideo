@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)
 
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "best_int8_qdq.onnx")
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "best.onnx")
 
 # Global session instance với thread lock
 session = None
@@ -29,12 +29,12 @@ CPU_CORES = psutil.cpu_count(logical=False)
 logger.info(f"CPU cores: {CPU_CORES}")
 
 def load_model():
-    """Load mô hình ONNX INT8"""
+    """Load mô hình ONNX float32"""
     global session, input_name
     if session is None:
         with model_lock:
             if session is None:
-                logger.info("Loading ONNX INT8 model for CPU inference...")
+                logger.info("Loading float32 ONNX model for CPU inference...")
                 session = ort.InferenceSession(MODEL_PATH, providers=["CPUExecutionProvider"])
                 input_name = session.get_inputs()[0].name
                 logger.info("Model loaded and ready.")
@@ -85,7 +85,7 @@ def detect():
         outputs = session.run(None, {input_name: img_input})[0]  # (1, N, 6)
         preds = outputs[0]
         inference_time = time.time() - start
-        logger.info(f"ONNX INT8 inference completed in {inference_time:.3f}s")
+        logger.info(f"ONNX float32 inference completed in {inference_time:.3f}s")
 
         boxes = preds[:, :4]
         scores = preds[:, 4]
@@ -106,7 +106,7 @@ def detect():
                 "bbox": [float(x1), float(y1), float(x2 - x1), float(y2 - y1)],
                 "confidence": float(scores[i]),
                 "class": int(class_ids[i]),
-                "className": str(class_ids[i])
+                "className": str(class_ids[i])  # có thể thay bằng nhãn thật nếu có class map
             })
 
         del img, img_input
@@ -125,7 +125,7 @@ def detect():
 
 @app.route('/ping', methods=['GET'])
 def ping():
-    return "YOLOv8 INT8 ONNX backend is alive!", 200
+    return "YOLOv8 float32 ONNX backend is alive!", 200
 
 if __name__ == '__main__':
     load_model()
