@@ -10,7 +10,7 @@ opencv-python-headless>=4.8.0
 pillow>=10.0.0
 
 # Numerical computing
-numpy>=1.24.0
+numpy<2
 
 # System monitoring (for CPU/memory info)
 psutil>=5.9.0

@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)
 
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "best_int8.onnx")
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "best_int8_qdq.onnx")
 
 # Global session instance với thread lock
 session = None
@@ -73,9 +73,12 @@ def detect():
             return jsonify({"error": "Empty file"}), 400
 
         img = read_image_from_frontend(file)
-        h, w, _ = img.shape
-        img_resized = cv2.resize(img, (640, 640))
-        img_input = img_resized.transpose(2, 0, 1) / 255.0
+
+        # Đảm bảo ảnh đã resize sẵn (ví dụ 320x320) từ frontend
+        if img.shape[0] != 320 or img.shape[1] != 320:
+            logger.warning(f"Unexpected image shape: {img.shape}. Expected (320, 320).")
+
+        img_input = img.transpose(2, 0, 1) / 255.0
         img_input = img_input[np.newaxis, ...].astype(np.float32)
 
         start = time.time()
@@ -98,8 +101,7 @@ def detect():
         results = []
         keep = non_max_suppression(xyxy, scores)
         for i in keep:
-            box = xyxy[i] * np.array([w / 640, h / 640, w / 640, h / 640])
-            x1, y1, x2, y2 = box.astype(int)
+            x1, y1, x2, y2 = xyxy[i].astype(int)
             results.append({
                 "bbox": [float(x1), float(y1), float(x2 - x1), float(y2 - y1)],
                 "confidence": float(scores[i]),
