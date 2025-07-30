@@ -29,15 +29,18 @@ CPU_CORES = psutil.cpu_count(logical=False)
 logger.info(f"CPU cores: {CPU_CORES}")
 
 def load_model():
-    """Load mô hình ONNX float32"""
     global session, input_name
     if session is None:
         with model_lock:
             if session is None:
-                logger.info("Loading float32 ONNX model for CPU inference...")
-                session = ort.InferenceSession(MODEL_PATH, providers=["CPUExecutionProvider"])
-                input_name = session.get_inputs()[0].name
-                logger.info("Model loaded and ready.")
+                logger.info(f"Loading float32 ONNX model from {MODEL_PATH}...")
+                try:
+                    session = ort.InferenceSession(MODEL_PATH, providers=["CPUExecutionProvider"])
+                    input_name = session.get_inputs()[0].name
+                    logger.info("Model loaded and ready.")
+                except Exception as e:
+                    logger.error(f"Failed to load model: {str(e)}")
+                    raise
     return session, input_name
 
 def read_image_from_frontend(file_storage):
@@ -74,7 +77,6 @@ def detect():
 
         img = read_image_from_frontend(file)
 
-        # Đảm bảo ảnh đã resize sẵn (ví dụ 320x320) từ frontend
         if img.shape[0] != 320 or img.shape[1] != 320:
             logger.warning(f"Unexpected image shape: {img.shape}. Expected (320, 320).")
 
@@ -82,16 +84,15 @@ def detect():
         img_input = img_input[np.newaxis, ...].astype(np.float32)
 
         start = time.time()
-        outputs = session.run(None, {input_name: img_input})[0]  # (1, N, 6)
-        preds = outputs[0]
-        inference_time = time.time() - start
-        logger.info(f"ONNX float32 inference completed in {inference_time:.3f}s")
+        outputs = session.run(None, {input_name: img_input})[0]  # (1, 5, 2100)
+        outputs = np.squeeze(outputs)  # (5, 2100)
+        preds = outputs.T  # (2100, 5)
 
         boxes = preds[:, :4]
         scores = preds[:, 4]
-        class_ids = preds[:, 5].astype(int)
+        class_ids = np.zeros_like(scores, dtype=int)  # Nếu không có class ID thì mặc định = 0
 
-        # xywh to xyxy
+        # Convert xywh to xyxy
         xyxy = np.zeros_like(boxes)
         xyxy[:, 0] = boxes[:, 0] - boxes[:, 2] / 2
         xyxy[:, 1] = boxes[:, 1] - boxes[:, 3] / 2
@@ -106,11 +107,14 @@ def detect():
                 "bbox": [float(x1), float(y1), float(x2 - x1), float(y2 - y1)],
                 "confidence": float(scores[i]),
                 "class": int(class_ids[i]),
-                "className": str(class_ids[i])  # có thể thay bằng nhãn thật nếu có class map
+                "className": str(class_ids[i])  # Có thể thay bằng tên nếu có mapping
             })
 
         del img, img_input
         gc.collect()
+
+        inference_time = time.time() - start
+        logger.info(f"Inference completed in {inference_time:.3f}s")
 
         return jsonify({
             "detections": results,
