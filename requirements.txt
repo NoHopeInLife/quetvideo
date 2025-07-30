@@ -1,5 +1,26 @@
-flask
-ultralytics
-opencv-python-headless
-pillow
-flask-cors
+# Core Flask dependencies
+flask==2.3.3
+flask-cors==4.0.0
+
+# YOLO and Computer Vision
+ultralytics==8.3.170
+
+# PyTorch CPU-only (lighter and faster for CPU inference)
+torch==2.1.0+cpu
+torchvision==0.16.0+cpu
+
+# Image processing
+opencv-python-headless==4.8.1.78
+pillow==10.0.1
+
+# Numerical computing
+numpy==1.24.3
+
+# System monitoring (for CPU/memory info)
+psutil==5.9.6
+
+# Production server
+gunicorn==21.2.0
+
+# Optional: For better logging
+coloredlogs==15.0.1
