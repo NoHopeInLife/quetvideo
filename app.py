@@ -311,10 +311,13 @@ if __name__ == '__main__':
     # Load model trước
     load_model()
     
+    # Get port from environment (for deployment platforms like Render, Heroku)
+    port = int(os.environ.get('PORT', 10000))
+    
     # CPU-optimized Flask settings
     app.run(
         host='0.0.0.0', 
-        port=10000, 
+        port=port,          # ✅ Dynamic port
         threaded=True,
         debug=False,
         processes=1  # Single process cho CPU optimization
