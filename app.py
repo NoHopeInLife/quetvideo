@@ -85,7 +85,7 @@ def detect():
 
         start = time.time()
         outputs = session.run(None, {input_name: img_input})[0]  # (1, 5, 2100)
-        outputs = np.squeeze(outputs)  # (5, 2100)
+        outputs = np.squeeze(outputs) 
         preds = outputs.T  # (2100, 5)
 
         boxes = preds[:, :4]
