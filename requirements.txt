@@ -2,6 +2,9 @@
 flask>=2.3.0
 flask-cors>=4.0.0
 
+# TorchScript inference (CPU-only)
+torch==2.1.0+cpu
+
 # Image processing
 opencv-python-headless>=4.8.0
 pillow>=10.0.0
@@ -15,5 +18,5 @@ psutil>=5.9.0
 # Production server
 gunicorn>=21.0.0
 
-# Optional: Logging
+# Logging (optional)
 coloredlogs>=15.0.0
