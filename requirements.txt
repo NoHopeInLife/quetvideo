@@ -2,11 +2,6 @@
 flask>=2.3.0
 flask-cors>=4.0.0
 
-# TorchScript inference (CPU-only, nhẹ và tránh lỗi CUDA)
-torch==2.1.0+cpu; platform_system != "Windows"
-
-# IMPORTANT: dùng lệnh pip install kèm URL PyTorch bên dưới
-
 # Image processing
 opencv-python-headless>=4.8.0
 pillow>=10.0.0
@@ -17,8 +12,8 @@ numpy>=1.24,<2.0
 # System monitoring
 psutil>=5.9.0
 
-# Production server (dùng khi deploy, không cần nếu chạy flask trực tiếp)
+# Production server
 gunicorn>=21.0.0
 
-# Logging đẹp (tuỳ chọn)
+# Optional: Logging
 coloredlogs>=15.0.0
