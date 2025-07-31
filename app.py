@@ -109,8 +109,8 @@ def detect():
             verbose=False,
             stream=False,
             half=False,
-            agnostic_nms=False,
-            max_det=100
+            agnostic_nms=True,
+            max_det=5
         )[0]
 
         inference_time = time.time() - start
