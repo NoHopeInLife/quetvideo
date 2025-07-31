@@ -2,8 +2,9 @@
 flask>=2.3.0
 flask-cors>=4.0.0
 
-# ONNX Runtime (INT8 inference support)
-onnxruntime==1.16.3
+# TorchScript inference (CPU-only, nhẹ và tránh lỗi CUDA)
+torch==2.1.0+cpu
+# IMPORTANT: dùng lệnh pip install kèm URL PyTorch bên dưới
 
 # Image processing
 opencv-python-headless>=4.8.0
@@ -12,11 +13,11 @@ pillow>=10.0.0
 # Numerical computing
 numpy>=1.24,<2.0
 
-# System monitoring (for CPU/memory info)
+# System monitoring
 psutil>=5.9.0
 
-# Production server
+# Production server (dùng khi deploy, không cần nếu chạy flask trực tiếp)
 gunicorn>=21.0.0
 
-# Optional: Logging
+# Logging đẹp (tuỳ chọn)
 coloredlogs>=15.0.0
