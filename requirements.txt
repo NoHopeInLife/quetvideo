@@ -3,7 +3,8 @@ flask>=2.3.0
 flask-cors>=4.0.0
 
 # TorchScript inference (CPU-only, nhẹ và tránh lỗi CUDA)
-torch==2.1.0+cpu
+torch==2.1.0+cpu; platform_system != "Windows"
+
 # IMPORTANT: dùng lệnh pip install kèm URL PyTorch bên dưới
 
 # Image processing
