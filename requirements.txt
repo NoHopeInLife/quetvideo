@@ -1,26 +1,3 @@
-# Core Flask dependencies
-flask>=2.3.0
-flask-cors>=4.0.0
-
-# YOLO and Computer Vision (compatible with Python 3.12+)
-ultralytics>=8.3.0
-
-# PyTorch CPU-only
-torch>=2.8.0+cpu
-torchvision>=0.15.2+cpu
-
-# Image processing
-opencv-python-headless>=4.8.1
-pillow>=10.1.0
-
-# Numerical computing
-numpy>=1.25.0
-
-# System monitoring (for CPU/memory info)
-psutil>=5.9.5
-
-# Production server
-gunicorn>=21.2.0
-
-# Optional: For better logging
-coloredlogs>=15.0.1
+flask>=2.3.2
+torch==2.2.0+cpu
+ultralytics==8.1.0
