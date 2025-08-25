@@ -1,100 +1,50 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from ultralytics import YOLO
 import numpy as np
-import cv2
-from threading import Lock
-import os
-import torch
-import gc
-import logging
-
-# Logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from PIL import Image, ImageDraw
+import io
+import base64
 
 app = Flask(__name__)
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "yolov8n.pt")
-model = None
-model_lock = Lock()
+CORS(app)  # Cho phép frontend gọi từ bất kỳ domain nào
 
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-logger.info(f"Using device: {DEVICE}")
+# Load YOLOv8n CPU
+model = YOLO("yolov8n.pt")
 
-def load_model():
-    """Load YOLOv8n pretrain FP16"""
-    global model
-    if model is None:
-        with model_lock:
-            if model is None:
-                logger.info("Loading YOLOv8n FP16 model...")
-                model = YOLO(MODEL_PATH)
-                # Load FP16
-                if DEVICE != "cpu":
-                    model.model.half()  # float16 only on GPU
-                # Warm-up
-                dummy_img = np.zeros((320,320,3), dtype=np.uint8)
-                model.predict(dummy_img, imgsz=320, device=DEVICE, verbose=False, half=(DEVICE!="cpu"))
-                logger.info("Model loaded and warmed up")
-    return model
+def read_image_from_base64(b64_string):
+    img_data = base64.b64decode(b64_string)
+    img = Image.open(io.BytesIO(img_data)).convert("RGB")
+    return img
 
-def preprocess_image(file_storage):
-    """Read image from POST request"""
-    file_bytes = file_storage.read()
-    nparr = np.frombuffer(file_bytes, np.uint8)
-    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    if img is None:
-        raise ValueError("Cannot decode image")
-    return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+def draw_boxes(img, results):
+    draw = ImageDraw.Draw(img)
+    for r in results:
+        for box, score, cls in zip(r.boxes.xyxy, r.boxes.conf, r.boxes.cls):
+            x1, y1, x2, y2 = box.tolist()
+            draw.rectangle([x1, y1, x2, y2], outline="red", width=2)
+            draw.text((x1, y1 - 10), f"{int(cls)} {score:.2f}", fill="red")
+    return img
 
 @app.route("/detect", methods=["POST"])
 def detect():
-    try:
-        model_instance = load_model()
-        if 'image' not in request.files:
-            return jsonify({"error":"No image file"}),400
-        img = preprocess_image(request.files['image'])
+    data = request.json
+    if "image" not in data:
+        return jsonify({"error": "Missing image"}), 400
 
-        results = model_instance.predict(
-            img,
-            imgsz=320,
-            device=DEVICE,
-            conf=0.5,
-            verbose=False,
-            half=(DEVICE!="cpu"),
-            agnostic_nms=True
-        )[0]
+    img = read_image_from_base64(data["image"])
+    # inference giữ 320x320
+    results = model.predict(np.array(img), imgsz=320, verbose=False)
 
-        detections = []
-        if results.boxes is not None and len(results.boxes) > 0:
-            confs = results.boxes.conf.cpu().numpy()
-            xyxy = results.boxes.xyxy.cpu().numpy()
-            classes = results.boxes.cls.cpu().numpy().astype(int)
-            names = model_instance.names
+    # Vẽ bounding boxes lên ảnh
+    img_out = draw_boxes(img, results)
 
-            for i in range(len(confs)):
-                class_name = names[classes[i]]
-                if class_name.lower() != "person":
-                    continue  # chỉ giữ class person
-                x1, y1, x2, y2 = xyxy[i]
-                bbox = [float(x1), float(y1), float(x2-x1), float(y2-y1)]
-                detections.append({
-                    "bbox": bbox,
-                    "confidence": float(confs[i]),
-                    "class": int(classes[i]),
-                    "className": class_name
-                })
+    # Chuyển ảnh thành base64 trả về
+    buffer = io.BytesIO()
+    img_out.save(buffer, format="JPEG")
+    b64_out = base64.b64encode(buffer.getvalue()).decode("utf-8")
 
-        gc.collect()
-        return jsonify({"detections": detections, "num_detections": len(detections), "device": DEVICE})
-    except Exception as e:
-        logger.error(str(e))
-        return jsonify({"error": str(e)}), 500
+    return jsonify({"image": b64_out})
 
-@app.route("/ping", methods=["GET"])
-def ping():
-    return "YOLOv8n FP16 CPU/GPU ready!",200
-
-if __name__=="__main__":
-    port = int(os.environ.get("PORT", 10000))
-    load_model()
-    app.run(host="0.0.0.0", port=port, debug=False)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
